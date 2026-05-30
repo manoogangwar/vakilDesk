@@ -52,3 +52,4 @@ frontend/
 
 # Claude Code memory
 .claude/
+App.jsx
