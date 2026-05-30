@@ -49,3 +49,6 @@ Thumbs.db
 
 # Legacy frontend (replaced by mobile/)
 frontend/
+
+# Claude Code memory
+.claude/
