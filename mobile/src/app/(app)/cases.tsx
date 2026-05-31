@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -71,7 +72,7 @@ export default function CasesScreen() {
         <Text style={styles.headerTitle}>My Cases</Text>
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => router.push('/(app)/new-case' as never)}
+          onPress={() => router.push('/(app)/new-case' as Href)}
         >
           <Text style={styles.addBtnText}>+ New</Text>
         </TouchableOpacity>
@@ -105,7 +106,7 @@ export default function CasesScreen() {
             <TouchableOpacity
               style={styles.card}
               onPress={() =>
-                router.push({ pathname: '/(app)/case-detail' as never, params: { id: item.id } })
+                router.push({ pathname: '/(app)/case-detail' as Href, params: { id: item.id } })
               }
             >
               <View style={styles.cardTop}>

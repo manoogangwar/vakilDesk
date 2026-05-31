@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -272,11 +273,11 @@ export default function DashboardScreen() {
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/new-case' as never)}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/new-case' as Href)}>
             <Text style={styles.actionIcon}>➕</Text>
             <Text style={styles.actionLabel}>New Case</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/cases' as never)}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/cases' as Href)}>
             <Text style={styles.actionIcon}>⚖️</Text>
             <Text style={styles.actionLabel}>All Cases</Text>
           </TouchableOpacity>
@@ -295,7 +296,7 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>
             {search ? `Results for "${search}"` : 'Recent Cases'}
           </Text>
-          <TouchableOpacity onPress={() => router.push('/(app)/cases' as never)}>
+          <TouchableOpacity onPress={() => router.push('/(app)/cases' as Href)}>
             <Text style={styles.seeAll}>See all →</Text>
           </TouchableOpacity>
         </View>
@@ -312,7 +313,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               key={c.id}
               style={styles.caseRow}
-              onPress={() => router.push({ pathname: '/(app)/case-detail' as never, params: { id: c.id } })}
+              onPress={() => router.push({ pathname: '/(app)/case-detail' as Href, params: { id: c.id } })}
             >
               <View style={styles.caseRowLeft}>
                 <Text style={styles.caseName}>{c.case_name}</Text>
@@ -369,7 +370,7 @@ export default function DashboardScreen() {
                     <View style={styles.drawerNameRow}>
                       <Badge value={profile.role} />
                       <TouchableOpacity
-                        onPress={() => closeDrawer(() => router.push('/(app)/edit-profile' as never))}
+                        onPress={() => closeDrawer(() => router.push('/(app)/edit-profile' as Href))}
                         style={styles.pencilBtn}
                       >
                         <Text style={styles.pencilText}>✏️</Text>
@@ -384,10 +385,10 @@ export default function DashboardScreen() {
             <ScrollView style={styles.drawerMenu} bounces={false}>
               <DrawerItem icon="🏠" label="Dashboard" onPress={() => closeDrawer()} />
               <DrawerItem icon="⚖️" label="My Cases"
-                onPress={() => closeDrawer(() => router.push('/(app)/cases' as never))} />
+                onPress={() => closeDrawer(() => router.push('/(app)/cases' as Href))} />
               {isAdmin && (
                 <DrawerItem icon="🛡" label="Admin Panel"
-                  onPress={() => closeDrawer(() => router.push('/(app)/admin' as never))} />
+                  onPress={() => closeDrawer(() => router.push('/(app)/admin' as Href))} />
               )}
               <DrawerItem icon="🔔" label="Notifications" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Notifications are coming in the next update.'))} />
               <DrawerItem icon="⚙️" label="Settings" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Settings are coming in the next update.'))} />
