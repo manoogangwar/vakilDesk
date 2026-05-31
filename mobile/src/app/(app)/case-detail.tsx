@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertBox } from '@/components/ui/AlertBox';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
+import { type Doc, DocumentsSection } from '@/components/ui/DocumentsSection';
 import { FormInput } from '@/components/ui/FormInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { C } from '@/constants/colors';
@@ -116,6 +117,7 @@ export default function CaseDetailScreen() {
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [hearings, setHearings] = useState<HearingRecord[]>([]);
+  const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [payForm, setPayForm] = useState({ fee_amount: '', paid_amount: '', payment_status: 'pending' as PayStatus });
@@ -127,14 +129,16 @@ export default function CaseDetailScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [caseRes, clientsRes, hearingsRes] = await Promise.all([
+      const [caseRes, clientsRes, hearingsRes, docsRes] = await Promise.all([
         api.get<CaseDetail>(`/cases/${id}/`),
         api.get<ClientItem[]>(`/cases/${id}/clients/`),
         api.get<HearingRecord[]>(`/cases/${id}/hearings/`),
+        api.get<Doc[]>(`/cases/${id}/documents/`),
       ]);
       setCaseData(caseRes.data);
       setClients(clientsRes.data);
       setHearings(hearingsRes.data);
+      setDocs(docsRes.data);
       setPayForm({
         fee_amount: caseRes.data.fee_amount,
         paid_amount: caseRes.data.paid_amount,
@@ -281,6 +285,9 @@ export default function CaseDetailScreen() {
             Tap to update payment →
           </Text>
         </TouchableOpacity>
+
+        {/* Documents */}
+        <DocumentsSection caseId={id ?? ''} docs={docs} onDocsChange={setDocs} />
 
         {/* Linked Clients */}
         <View style={styles.card}>
