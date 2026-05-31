@@ -94,6 +94,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cases, setCases] = useState<Case[]>([]);
+  const [clientCount, setClientCount] = useState(0);
   const [search, setSearch] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -103,12 +104,14 @@ export default function DashboardScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [profileRes, casesRes] = await Promise.all([
+      const [profileRes, casesRes, clientsRes] = await Promise.all([
         api.get<Profile>('/profile/'),
         api.get<Case[]>('/cases/'),
+        api.get<{ id: number }[]>('/clients/'),
       ]);
       setProfile(profileRes.data);
       setCases(casesRes.data);
+      setClientCount(clientsRes.data.length);
     } catch {
       await logout();
       router.replace('/(auth)/login');
@@ -261,7 +264,7 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.statsGrid}>
           <StatCard icon="⚖️" value={cases.length} label="Active Cases" variant="navy" />
-          <StatCard icon="⏳" value={cases.filter(c => c.payment_status === 'pending').length} label="Fee Pending" variant="gold" />
+          <StatCard icon="👥" value={clientCount} label="Clients" variant="gold" />
           <StatCard
             icon="📅"
             value={cases.filter(c => c.next_date === todayISO).length}
@@ -281,7 +284,7 @@ export default function DashboardScreen() {
             <Text style={styles.actionIcon}>⚖️</Text>
             <Text style={styles.actionLabel}>All Cases</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} onPress={() => Alert.alert('Coming Soon', 'Client management is coming in the next update.')}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/new-client' as Href)}>
             <Text style={styles.actionIcon}>👤</Text>
             <Text style={styles.actionLabel}>Add Client</Text>
           </TouchableOpacity>
@@ -386,6 +389,8 @@ export default function DashboardScreen() {
               <DrawerItem icon="🏠" label="Dashboard" onPress={() => closeDrawer()} />
               <DrawerItem icon="⚖️" label="My Cases"
                 onPress={() => closeDrawer(() => router.push('/(app)/cases' as Href))} />
+              <DrawerItem icon="👥" label="My Clients"
+                onPress={() => closeDrawer(() => router.push('/(app)/clients' as Href))} />
               {isAdmin && (
                 <DrawerItem icon="🛡" label="Admin Panel"
                   onPress={() => closeDrawer(() => router.push('/(app)/admin' as Href))} />
