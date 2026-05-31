@@ -9,6 +9,21 @@ class Case(models.Model):
         ('paid', 'Paid'),
     ]
 
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('adjourned', 'Adjourned'),
+        ('disposed', 'Disposed'),
+        ('on_hold', 'On Hold'),
+    ]
+
+    COURT_TYPE_CHOICES = [
+        ('district', 'District Court'),
+        ('high_court', 'High Court'),
+        ('supreme_court', 'Supreme Court'),
+        ('tribunal', 'Tribunal'),
+        ('other', 'Other'),
+    ]
+
     lawyer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -16,6 +31,10 @@ class Case(models.Model):
     )
     case_name = models.CharField(max_length=255)
     case_number = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    court_name = models.CharField(max_length=255, blank=True)
+    court_type = models.CharField(max_length=20, choices=COURT_TYPE_CHOICES, blank=True)
+    judge_name = models.CharField(max_length=255, blank=True)
     under_section = models.CharField(max_length=255, blank=True, verbose_name='U/S')
     police_station = models.CharField(max_length=255, blank=True, verbose_name='P/S')
     next_date = models.DateField(null=True, blank=True)

@@ -9,6 +9,7 @@ class CaseSerializer(serializers.ModelSerializer):
         model = Case
         fields = [
             'id', 'case_name', 'case_number',
+            'status', 'court_name', 'court_type', 'judge_name',
             'under_section', 'police_station',
             'next_date', 'previous_date',
             'payment_status', 'fee_amount', 'paid_amount',
