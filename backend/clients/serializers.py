@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -40,7 +42,7 @@ class ClientSerializer(serializers.ModelSerializer):
             email=email,
             first_name=user_data.get('first_name', ''),
             last_name=user_data.get('last_name', ''),
-            password=User.objects.make_random_password(),
+            password=secrets.token_urlsafe(16),
             role='client',
         )
         user.phone = user_data.get('phone', '')
