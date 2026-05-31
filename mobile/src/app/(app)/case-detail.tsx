@@ -113,6 +113,20 @@ export default function CaseDetailScreen() {
 
   const handleUpdatePayment = async () => {
     setPayError('');
+    const fee = parseFloat(payForm.fee_amount);
+    const paid = parseFloat(payForm.paid_amount);
+    if (payForm.fee_amount && isNaN(fee)) {
+      setPayError('Total fee must be a valid number.');
+      return;
+    }
+    if (payForm.paid_amount && isNaN(paid)) {
+      setPayError('Amount paid must be a valid number.');
+      return;
+    }
+    if (!isNaN(fee) && !isNaN(paid) && paid > fee) {
+      setPayError('Amount paid cannot exceed total fee.');
+      return;
+    }
     setPayLoading(true);
     try {
       const { data } = await api.patch<CaseDetail>(`/cases/${id}/`, payForm);
