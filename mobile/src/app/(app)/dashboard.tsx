@@ -283,6 +283,29 @@ export default function DashboardScreen() {
           />
         </View>
 
+        {/* Today's Cause List */}
+        {cases.filter(c => c.next_date === todayISO).length > 0 && (
+          <>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>Today's Cause List</Text>
+              <TouchableOpacity onPress={() => router.push('/(app)/calendar' as Href)}>
+                <Text style={styles.seeAll}>Full calendar →</Text>
+              </TouchableOpacity>
+            </View>
+            {cases.filter(c => c.next_date === todayISO).map(c => (
+              <TouchableOpacity
+                key={`today-${c.id}`}
+                style={styles.causeRow}
+                onPress={() => router.push({ pathname: '/(app)/case-detail', params: { id: c.id } })}
+              >
+                <View style={styles.causeDot} />
+                <Text style={styles.causeName} numberOfLines={1}>{c.case_name}</Text>
+                <Badge value={c.payment_status} />
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionRow}>
@@ -298,9 +321,9 @@ export default function DashboardScreen() {
             <Text style={styles.actionIcon}>👤</Text>
             <Text style={styles.actionLabel}>Add Client</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} onPress={() => Alert.alert('Coming Soon', 'Calendar & scheduling is coming in the next update.')}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/calendar' as Href)}>
             <Text style={styles.actionIcon}>📅</Text>
-            <Text style={styles.actionLabel}>Schedule</Text>
+            <Text style={styles.actionLabel}>Calendar</Text>
           </TouchableOpacity>
         </View>
 
@@ -401,6 +424,8 @@ export default function DashboardScreen() {
                 onPress={() => closeDrawer(() => router.push('/(app)/cases' as Href))} />
               <DrawerItem icon="👥" label="My Clients"
                 onPress={() => closeDrawer(() => router.push('/(app)/clients' as Href))} />
+              <DrawerItem icon="📅" label="Calendar"
+                onPress={() => closeDrawer(() => router.push('/(app)/calendar' as Href))} />
               {isAdmin && (
                 <DrawerItem icon="🛡" label="Admin Panel"
                   onPress={() => closeDrawer(() => router.push('/(app)/admin' as Href))} />
@@ -486,6 +511,15 @@ const styles = StyleSheet.create({
   },
   actionIcon: { fontSize: 24, marginBottom: 6 },
   actionLabel: { fontSize: 11, fontWeight: '600', color: C.text, textAlign: 'center' },
+
+  // Cause list
+  causeRow: {
+    backgroundColor: C.white, borderRadius: 10, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1, borderColor: C.border, marginBottom: 8,
+  },
+  causeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
+  causeName: { flex: 1, fontSize: 13.5, fontWeight: '600', color: C.text },
 
   // Cases
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
