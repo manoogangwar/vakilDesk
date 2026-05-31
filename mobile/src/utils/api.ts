@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getAccessToken } from './auth';
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './auth';
 
 function getBaseUrl(): string {
   // During development with Expo CLI, Constants.expoConfig.hostUri is the
@@ -27,6 +27,7 @@ export const BASE_URL = getBaseUrl();
 
 const api = axios.create({ baseURL: BASE_URL });
 
+// Attach access token to every request
 api.interceptors.request.use(async (config) => {
   const token = await getAccessToken();
   if (token) {
@@ -35,5 +36,34 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+// On 401: try to silently refresh the access token, then retry the original request.
+// If refresh fails, clear tokens so the root navigator redirects to login.
+api.interceptors.response.use(
+  (response) => response,
+  async (error: { config?: { _retry?: boolean; headers?: Record<string, string> }; response?: { status?: number } }) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refresh = await getRefreshToken();
+        if (!refresh) throw new Error('no refresh token');
+        const { data } = await axios.post<{ access: string; refresh?: string }>(
+          `${BASE_URL}/token/refresh/`,
+          { refresh },
+        );
+        await setTokens(data.access, data.refresh ?? refresh);
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${data.access}`;
+        }
+        return api(originalRequest as Parameters<typeof api>[0]);
+      } catch {
+        await clearTokens();
+        // Tokens cleared — root navigator's useEffect will detect isAuthed=false and redirect to login
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;
