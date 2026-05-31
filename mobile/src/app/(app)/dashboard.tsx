@@ -313,7 +313,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               key={c.id}
               style={styles.caseRow}
-              onPress={() => router.push({ pathname: '/(app)/case-detail' as Href, params: { id: c.id } })}
+              onPress={() => router.push({ pathname: '/(app)/case-detail', params: { id: c.id } })}
             >
               <View style={styles.caseRowLeft}>
                 <Text style={styles.caseName}>{c.case_name}</Text>

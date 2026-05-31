@@ -106,7 +106,7 @@ export default function CasesScreen() {
             <TouchableOpacity
               style={styles.card}
               onPress={() =>
-                router.push({ pathname: '/(app)/case-detail' as Href, params: { id: item.id } })
+                router.push({ pathname: '/(app)/case-detail', params: { id: item.id } })
               }
             >
               <View style={styles.cardTop}>
