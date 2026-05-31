@@ -9,10 +9,11 @@ class CaseListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        from django.db.models import Q
         qs = Case.objects.filter(lawyer=self.request.user)
         search = self.request.query_params.get('search')
         if search:
-            qs = qs.filter(case_name__icontains=search)
+            qs = qs.filter(Q(case_name__icontains=search) | Q(case_number__icontains=search))
         return qs
 
 
