@@ -18,12 +18,15 @@ class ClientSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(source='user.phone', default='')
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
 
+    password = serializers.CharField(write_only=True, required=False, min_length=6)
+
     class Meta:
         model = ClientProfile
         fields = [
             'id', 'user_id', 'username',
             'first_name', 'last_name', 'email', 'phone',
             'address', 'notes', 'is_active', 'created_at',
+            'password',
         ]
         read_only_fields = ['id', 'user_id', 'username', 'is_active', 'created_at']
 
@@ -37,21 +40,26 @@ class ClientSerializer(serializers.ModelSerializer):
         while User.objects.filter(username=username).exists():
             username = f"{base}{n}"
             n += 1
+        # Use provided password or generate one
+        password = validated_data.pop('password', None) or secrets.token_urlsafe(12)
         user = User.objects.create_user(
             username=username,
             email=email,
             first_name=user_data.get('first_name', ''),
             last_name=user_data.get('last_name', ''),
-            password=secrets.token_urlsafe(16),
+            password=password,
             role='client',
         )
         user.phone = user_data.get('phone', '')
         user.save(update_fields=['phone'])
-        return ClientProfile.objects.create(
+        profile = ClientProfile.objects.create(
             user=user,
             lawyer=self.context['request'].user,
             **validated_data,
         )
+        # Attach generated username so the response can show login info
+        profile._generated_username = username
+        return profile
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})

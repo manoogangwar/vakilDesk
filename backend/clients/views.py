@@ -24,6 +24,16 @@ class ClientListCreateView(generics.ListCreateAPIView):
             )
         return qs
 
+    def create(self, request, *args, **kwargs):
+        from rest_framework import status as drf_status
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        data = serializer.data
+        # Include the auto-generated username in the creation response
+        data['username'] = instance._generated_username if hasattr(instance, '_generated_username') else instance.user.username
+        return Response(data, status=drf_status.HTTP_201_CREATED)
+
 
 class ClientDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ClientSerializer
