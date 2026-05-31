@@ -137,6 +137,9 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'
+
 # CORS / security
 # In development allow all origins so the Expo/React Native app on any LAN IP works.
 # In production, set CORS_ALLOWED_ORIGINS env var to the real domain(s).

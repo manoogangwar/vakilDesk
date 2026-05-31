@@ -1,5 +1,29 @@
 from rest_framework import serializers
-from .models import Case, HearingRecord
+from .models import Case, Document, HearingRecord
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField(read_only=True)
+    uploaded_by_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Document
+        fields = [
+            'id', 'title', 'doc_type', 'file', 'file_url',
+            'file_name', 'file_size', 'uploaded_by_name', 'uploaded_at',
+        ]
+        read_only_fields = ['id', 'file_url', 'file_name', 'file_size', 'uploaded_by_name', 'uploaded_at']
+        extra_kwargs = {'file': {'write_only': True}}
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        return None
+
+    def get_uploaded_by_name(self, obj):
+        u = obj.uploaded_by
+        return (f"{u.first_name} {u.last_name}".strip()) or u.username
 
 
 class HearingRecordSerializer(serializers.ModelSerializer):

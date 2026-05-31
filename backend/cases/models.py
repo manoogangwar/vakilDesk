@@ -57,6 +57,39 @@ class Case(models.Model):
         return f"{self.case_name} ({self.lawyer.username})"
 
 
+class Document(models.Model):
+    DOC_TYPE_CHOICES = [
+        ('fir', 'FIR'),
+        ('chargesheet', 'Charge Sheet'),
+        ('bail', 'Bail Papers'),
+        ('vakalatnama', 'Vakalatnama'),
+        ('affidavit', 'Affidavit'),
+        ('judgment', 'Judgment'),
+        ('order', 'Court Order'),
+        ('evidence', 'Evidence'),
+        ('other', 'Other'),
+    ]
+
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='documents')
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='uploaded_documents',
+    )
+    title = models.CharField(max_length=255)
+    doc_type = models.CharField(max_length=20, choices=DOC_TYPE_CHOICES, default='other')
+    file = models.FileField(upload_to='case_documents/%Y/%m/')
+    file_name = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.case.case_name})"
+
+
 class HearingRecord(models.Model):
     """One entry per past hearing date — auto-created when next_date changes."""
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='hearing_records')

@@ -2,12 +2,13 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Case, CaseClient, HearingRecord
-from .serializers import CaseSerializer, HearingRecordSerializer
+from .models import Case, CaseClient, Document, HearingRecord
+from .serializers import CaseSerializer, DocumentSerializer, HearingRecordSerializer
 
 User = get_user_model()
 
@@ -44,6 +45,36 @@ class UpcomingHearingsView(generics.ListAPIView):
             lawyer=self.request.user,
             next_date__gte=today,
         ).order_by('next_date')
+
+
+class DocumentListCreateView(generics.ListCreateAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        return Document.objects.filter(
+            case__pk=self.kwargs['pk'],
+            case__lawyer=self.request.user,
+        )
+
+    def perform_create(self, serializer):
+        case = Case.objects.get(pk=self.kwargs['pk'], lawyer=self.request.user)
+        uploaded_file = self.request.FILES.get('file')
+        serializer.save(
+            case=case,
+            uploaded_by=self.request.user,
+            file_name=uploaded_file.name if uploaded_file else '',
+            file_size=uploaded_file.size if uploaded_file else 0,
+        )
+
+
+class DocumentDeleteView(generics.DestroyAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Document.objects.filter(case__lawyer=self.request.user)
 
 
 class HearingRecordListCreateView(generics.ListCreateAPIView):
