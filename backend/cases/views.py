@@ -1,11 +1,13 @@
+import datetime
+
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Case, CaseClient
-from .serializers import CaseSerializer
+from .models import Case, CaseClient, HearingRecord
+from .serializers import CaseSerializer, HearingRecordSerializer
 
 User = get_user_model()
 
@@ -29,6 +31,34 @@ class CaseDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Case.objects.filter(lawyer=self.request.user)
+
+
+class UpcomingHearingsView(generics.ListAPIView):
+    """All lawyer's cases that have a next_date >= today, ordered by next_date."""
+    serializer_class = CaseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        today = datetime.date.today()
+        return Case.objects.filter(
+            lawyer=self.request.user,
+            next_date__gte=today,
+        ).order_by('next_date')
+
+
+class HearingRecordListCreateView(generics.ListCreateAPIView):
+    serializer_class = HearingRecordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return HearingRecord.objects.filter(
+            case__pk=self.kwargs['pk'],
+            case__lawyer=self.request.user,
+        )
+
+    def perform_create(self, serializer):
+        case = Case.objects.get(pk=self.kwargs['pk'], lawyer=self.request.user)
+        serializer.save(case=case)
 
 
 class CaseClientListView(APIView):
@@ -56,7 +86,10 @@ class CaseClientListView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
         _, created = CaseClient.objects.get_or_create(case=case, client=client)
-        return Response({'linked': True, 'created': created}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        return Response(
+            {'linked': True, 'created': created},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
     def _get_case(self, pk, request):
         try:

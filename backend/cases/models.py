@@ -57,6 +57,21 @@ class Case(models.Model):
         return f"{self.case_name} ({self.lawyer.username})"
 
 
+class HearingRecord(models.Model):
+    """One entry per past hearing date — auto-created when next_date changes."""
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='hearing_records')
+    date = models.DateField()
+    outcome = models.TextField(blank=True)
+    adjourned_to = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.case.case_name} — {self.date}"
+
+
 class CaseClient(models.Model):
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='case_clients')
     client = models.ForeignKey(

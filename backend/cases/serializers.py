@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import Case
+from .models import Case, HearingRecord
+
+
+class HearingRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HearingRecord
+        fields = ['id', 'date', 'outcome', 'adjourned_to', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
 class CaseSerializer(serializers.ModelSerializer):
@@ -26,8 +33,13 @@ class CaseSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        # When next_date changes, shift the old next_date into previous_date automatically
         new_next = validated_data.get('next_date', instance.next_date)
         if new_next and new_next != instance.next_date and instance.next_date:
             validated_data.setdefault('previous_date', instance.next_date)
+            # Auto-record the hearing that just passed
+            HearingRecord.objects.create(
+                case=instance,
+                date=instance.next_date,
+                adjourned_to=new_next,
+            )
         return super().update(instance, validated_data)
