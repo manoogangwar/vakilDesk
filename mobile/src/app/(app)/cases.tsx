@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AlertBox } from '@/components/ui/AlertBox';
 import { Badge } from '@/components/ui/Badge';
 import { C } from '@/constants/colors';
 import api from '@/utils/api';
@@ -37,15 +38,17 @@ export default function CasesScreen() {
   const router = useRouter();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
+    setFetchError('');
     try {
       const { data } = await api.get<Case[]>('/cases/');
       setCases(data);
     } catch {
-      // handled silently — user stays on screen
+      setFetchError('Failed to load cases. Pull down to retry.');
     } finally {
       setLoading(false);
     }
@@ -88,6 +91,8 @@ export default function CasesScreen() {
           clearButtonMode="while-editing"
         />
       </View>
+
+      {fetchError ? <AlertBox type="error" message={fetchError} /> : null}
 
       {loading ? (
         <ActivityIndicator style={styles.loader} size="large" color={C.primary} />
