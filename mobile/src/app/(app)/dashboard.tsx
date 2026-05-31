@@ -24,6 +24,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { C } from '@/constants/colors';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
+import { registerPushToken, scheduleHearingReminders } from '@/utils/notifications';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -110,6 +111,11 @@ export default function DashboardScreen() {
       ]);
       setProfile(profileRes.data);
       setCases(casesRes.data);
+      // Schedule local hearing reminders and register push token (fire-and-forget)
+      void scheduleHearingReminders(
+        casesRes.data.filter(c => !!c.next_date).map(c => ({ id: c.id, case_name: c.case_name, next_date: c.next_date! }))
+      );
+      void registerPushToken();
     } catch (err: unknown) {
       // Only logout on 401 — network errors or server errors should NOT kick the user out
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -223,7 +229,7 @@ export default function DashboardScreen() {
           Vakil<Text style={styles.logoAccent}>Desk</Text>
         </Text>
         <View style={styles.topbarRight}>
-          <TouchableOpacity style={styles.iconBtn}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(app)/messages' as Href)}>
             <Text style={styles.iconText}>💬</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.dotBtn} onPress={openDrawer}>
@@ -432,7 +438,9 @@ export default function DashboardScreen() {
                 <DrawerItem icon="🛡" label="Admin Panel"
                   onPress={() => closeDrawer(() => router.push('/(app)/admin' as Href))} />
               )}
-              <DrawerItem icon="🔔" label="Notifications" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Notifications are coming in the next update.'))} />
+              <DrawerItem icon="💬" label="Messages"
+                onPress={() => closeDrawer(() => router.push('/(app)/messages' as Href))} />
+              <DrawerItem icon="🔔" label="Notifications" onPress={() => closeDrawer(() => Alert.alert('Hearing Reminders', 'Local notifications are scheduled automatically for your upcoming hearings — one day before and on the day of each hearing.'))} />
               <DrawerItem icon="⚙️" label="Settings" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Settings are coming in the next update.'))} />
               <DrawerItem icon="❓" label="Help & Support" onPress={() => closeDrawer(() => Alert.alert('Help & Support', 'For assistance, contact support@vakildesk.in'))} />
             </ScrollView>

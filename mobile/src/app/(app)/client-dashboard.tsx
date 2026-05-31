@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/ui/StatCard';
+import type { Href } from 'expo-router';
 import { C } from '@/constants/colors';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
@@ -107,9 +108,14 @@ export default function ClientDashboardScreen() {
             <Text style={styles.headerName}>{profile ? getName(profile) : '…'}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={async () => { await logout(); router.replace('/(auth)/login'); }}>
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(app)/messages' as Href)}>
+            <Text style={styles.iconText}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={async () => { await logout(); router.replace('/(auth)/login'); }}>
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -198,6 +204,9 @@ const styles = StyleSheet.create({
   avatarImg: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: C.accent },
   headerGreet: { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
   headerName: { fontSize: 14, fontWeight: '700', color: C.white },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
+  iconText: { fontSize: 16 },
   logoutText: { color: '#fca5a5', fontSize: 12, fontWeight: '600' },
 
   body: { padding: 16, paddingBottom: 40 },
