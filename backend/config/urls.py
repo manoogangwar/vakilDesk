@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/cases/', include('cases.urls')),
     path('api/clients/', include('clients.urls')),
     path('api/invoices/', include('billing.urls')),
+    path('api/messages/', include('messaging.urls')),
 ]
 
 if settings.DEBUG:
