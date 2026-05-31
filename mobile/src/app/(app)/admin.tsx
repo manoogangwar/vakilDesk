@@ -121,9 +121,14 @@ export default function AdminScreen() {
         return;
       }
       setUsers(usersRes.data);
-    } catch {
-      await logout();
-      router.replace('/(auth)/login');
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        await logout();
+        router.replace('/(auth)/login');
+      } else {
+        router.replace('/(app)/dashboard');
+      }
     } finally {
       setLoading(false);
     }

@@ -104,17 +104,27 @@ export default function DashboardScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [profileRes, casesRes, clientsRes] = await Promise.all([
+      const [profileRes, casesRes] = await Promise.all([
         api.get<Profile>('/profile/'),
         api.get<Case[]>('/cases/'),
-        api.get<{ id: number }[]>('/clients/'),
       ]);
       setProfile(profileRes.data);
       setCases(casesRes.data);
-      setClientCount(clientsRes.data.length);
+    } catch (err: unknown) {
+      // Only logout on 401 — network errors or server errors should NOT kick the user out
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        await logout();
+        router.replace('/(auth)/login');
+      }
+    }
+
+    // Client count is non-critical — its failure must not affect auth state
+    try {
+      const { data } = await api.get<{ id: number }[]>('/clients/');
+      setClientCount(data.length);
     } catch {
-      await logout();
-      router.replace('/(auth)/login');
+      // Keep showing 0 — user can still use the app
     }
   }, [logout, router]);
 
