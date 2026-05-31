@@ -52,6 +52,13 @@ type ClientItem = {
   phone: string;
 };
 
+type HearingRecord = {
+  id: number;
+  date: string;
+  outcome: string;
+  adjourned_to: string | null;
+};
+
 type PayStatus = 'pending' | 'partial' | 'paid';
 
 const PAY_STATUS_COLOR: Record<PayStatus, string> = {
@@ -108,6 +115,7 @@ export default function CaseDetailScreen() {
   const router = useRouter();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
   const [clients, setClients] = useState<ClientItem[]>([]);
+  const [hearings, setHearings] = useState<HearingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [payForm, setPayForm] = useState({ fee_amount: '', paid_amount: '', payment_status: 'pending' as PayStatus });
@@ -119,12 +127,14 @@ export default function CaseDetailScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [caseRes, clientsRes] = await Promise.all([
+      const [caseRes, clientsRes, hearingsRes] = await Promise.all([
         api.get<CaseDetail>(`/cases/${id}/`),
         api.get<ClientItem[]>(`/cases/${id}/clients/`),
+        api.get<HearingRecord[]>(`/cases/${id}/hearings/`),
       ]);
       setCaseData(caseRes.data);
       setClients(clientsRes.data);
+      setHearings(hearingsRes.data);
       setPayForm({
         fee_amount: caseRes.data.fee_amount,
         paid_amount: caseRes.data.paid_amount,
@@ -294,6 +304,33 @@ export default function CaseDetailScreen() {
             ))
           )}
         </View>
+
+        {/* Hearing History */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Hearing History ({hearings.length})</Text>
+          {hearings.length === 0 ? (
+            <Text style={styles.noClients}>No hearing records yet. History is created automatically when you update the next date.</Text>
+          ) : (
+            hearings.map((h, i) => (
+              <View key={h.id} style={styles.hearingRow}>
+                {/* Timeline dot + line */}
+                <View style={styles.timelineCol}>
+                  <View style={[styles.timelineDot, i === 0 && styles.timelineDotFirst]} />
+                  {i < hearings.length - 1 && <View style={styles.timelineLine} />}
+                </View>
+                <View style={styles.hearingContent}>
+                  <Text style={styles.hearingDate}>{fmt(h.date)}</Text>
+                  {h.adjourned_to ? (
+                    <Text style={styles.hearingAdjourned}>Adjourned to: {fmt(h.adjourned_to)}</Text>
+                  ) : null}
+                  {h.outcome ? (
+                    <Text style={styles.hearingOutcome}>{h.outcome}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
 
       {/* ── Payment Status Modal ── */}
@@ -440,6 +477,17 @@ const styles = StyleSheet.create({
   clientInfo: { flex: 1 },
   clientName: { fontSize: 13.5, fontWeight: '600', color: C.text },
   clientSub: { fontSize: 12, color: C.textMuted, marginTop: 1 },
+
+  // Hearing timeline
+  hearingRow: { flexDirection: 'row', gap: 12, paddingTop: 12 },
+  timelineCol: { alignItems: 'center', width: 16 },
+  timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.border, marginTop: 3 },
+  timelineDotFirst: { backgroundColor: C.primary },
+  timelineLine: { flex: 1, width: 2, backgroundColor: C.border, marginTop: 4, minHeight: 24 },
+  hearingContent: { flex: 1, paddingBottom: 12 },
+  hearingDate: { fontSize: 13.5, fontWeight: '700', color: C.text, marginBottom: 2 },
+  hearingAdjourned: { fontSize: 12.5, color: C.primary, marginBottom: 2 },
+  hearingOutcome: { fontSize: 12.5, color: C.textMuted, lineHeight: 18 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
