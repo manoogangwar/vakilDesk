@@ -60,6 +60,16 @@ type HearingRecord = {
   adjourned_to: string | null;
 };
 
+type InvoiceSummary = {
+  id: number;
+  invoice_number: string;
+  amount: string;
+  paid_amount: string;
+  balance: string;
+  status: string;
+  due_date: string | null;
+};
+
 type PayStatus = 'pending' | 'partial' | 'paid';
 
 const PAY_STATUS_COLOR: Record<PayStatus, string> = {
@@ -118,6 +128,7 @@ export default function CaseDetailScreen() {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [hearings, setHearings] = useState<HearingRecord[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [payForm, setPayForm] = useState({ fee_amount: '', paid_amount: '', payment_status: 'pending' as PayStatus });
@@ -129,16 +140,18 @@ export default function CaseDetailScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [caseRes, clientsRes, hearingsRes, docsRes] = await Promise.all([
+      const [caseRes, clientsRes, hearingsRes, docsRes, invRes] = await Promise.all([
         api.get<CaseDetail>(`/cases/${id}/`),
         api.get<ClientItem[]>(`/cases/${id}/clients/`),
         api.get<HearingRecord[]>(`/cases/${id}/hearings/`),
         api.get<Doc[]>(`/cases/${id}/documents/`),
+        api.get<InvoiceSummary[]>(`/invoices/?case=${id}`),
       ]);
       setCaseData(caseRes.data);
       setClients(clientsRes.data);
       setHearings(hearingsRes.data);
       setDocs(docsRes.data);
+      setInvoices(invRes.data);
       setPayForm({
         fee_amount: caseRes.data.fee_amount,
         paid_amount: caseRes.data.paid_amount,
@@ -285,6 +298,36 @@ export default function CaseDetailScreen() {
             Tap to update payment →
           </Text>
         </TouchableOpacity>
+
+        {/* Invoices */}
+        <View style={styles.card}>
+          <View style={styles.clientsHeader}>
+            <Text style={styles.cardTitle}>Invoices ({invoices.length})</Text>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(app)/new-invoice', params: { case_id: id } } as Href)}>
+              <Text style={styles.manageLink}>+ New →</Text>
+            </TouchableOpacity>
+          </View>
+          {invoices.length === 0 ? (
+            <Text style={styles.noClients}>No invoices yet.</Text>
+          ) : (
+            invoices.map(inv => (
+              <TouchableOpacity
+                key={inv.id}
+                style={styles.invoiceRow}
+                onPress={() => router.push({ pathname: '/(app)/invoice-detail', params: { id: inv.id } } as Href)}
+              >
+                <View style={styles.invoiceLeft}>
+                  <Text style={styles.invoiceNum}>{inv.invoice_number}</Text>
+                  <Text style={styles.invoiceMeta}>
+                    ₹{parseFloat(inv.amount).toLocaleString('en-IN')}
+                    {inv.due_date ? ` · Due ${fmt(inv.due_date)}` : ''}
+                  </Text>
+                </View>
+                <Badge value={inv.status} />
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
 
         {/* Documents */}
         <DocumentsSection caseId={id ?? ''} docs={docs} onDocsChange={setDocs} />
@@ -484,6 +527,12 @@ const styles = StyleSheet.create({
   clientInfo: { flex: 1 },
   clientName: { fontSize: 13.5, fontWeight: '600', color: C.text },
   clientSub: { fontSize: 12, color: C.textMuted, marginTop: 1 },
+
+  // Invoice rows
+  invoiceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border, gap: 10 },
+  invoiceLeft: { flex: 1 },
+  invoiceNum: { fontSize: 13.5, fontWeight: '700', color: C.primary },
+  invoiceMeta: { fontSize: 12, color: C.textMuted, marginTop: 2 },
 
   // Hearing timeline
   hearingRow: { flexDirection: 'row', gap: 12, paddingTop: 12 },

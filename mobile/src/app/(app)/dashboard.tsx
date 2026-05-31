@@ -426,6 +426,8 @@ export default function DashboardScreen() {
                 onPress={() => closeDrawer(() => router.push('/(app)/clients' as Href))} />
               <DrawerItem icon="📅" label="Calendar"
                 onPress={() => closeDrawer(() => router.push('/(app)/calendar' as Href))} />
+              <DrawerItem icon="🧾" label="Invoices"
+                onPress={() => closeDrawer(() => router.push('/(app)/invoices' as Href))} />
               {isAdmin && (
                 <DrawerItem icon="🛡" label="Admin Panel"
                   onPress={() => closeDrawer(() => router.push('/(app)/admin' as Href))} />
