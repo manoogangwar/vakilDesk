@@ -6,7 +6,7 @@ export const getRefreshToken = () => AsyncStorage.getItem('refresh');
 export const setTokens = (access: string, refresh: string) =>
   AsyncStorage.multiSet([['access', access], ['refresh', refresh]]);
 
-export const clearTokens = () => AsyncStorage.multiRemove(['access', 'refresh']);
+export const clearTokens = () => AsyncStorage.multiRemove(['access', 'refresh', 'user_role']);
 
 export const isAuthenticated = async () => !!(await getAccessToken());
 
