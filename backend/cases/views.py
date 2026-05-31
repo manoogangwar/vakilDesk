@@ -93,6 +93,46 @@ class HearingRecordListCreateView(generics.ListCreateAPIView):
         serializer.save(case=case)
 
 
+class ClientMyCasesListView(generics.ListAPIView):
+    """Cases the logged-in client is linked to (read-only)."""
+    serializer_class = CaseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Case.objects.filter(case_clients__client=self.request.user).order_by('-created_at')
+
+
+class ClientMyCaseDetailView(generics.RetrieveAPIView):
+    """Single case detail for a linked client (read-only)."""
+    serializer_class = CaseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Case.objects.filter(case_clients__client=self.request.user)
+
+
+class ClientMyCaseHearingsView(generics.ListAPIView):
+    serializer_class = HearingRecordSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return HearingRecord.objects.filter(
+            case__pk=self.kwargs['pk'],
+            case__case_clients__client=self.request.user,
+        )
+
+
+class ClientMyCaseDocumentsView(generics.ListAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Document.objects.filter(
+            case__pk=self.kwargs['pk'],
+            case__case_clients__client=self.request.user,
+        )
+
+
 class CaseClientListView(APIView):
     """List clients linked to a case, or link a new client."""
     permission_classes = [IsAuthenticated]
