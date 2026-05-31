@@ -72,6 +72,7 @@ class DocumentListCreateView(generics.ListCreateAPIView):
 class DocumentDeleteView(generics.DestroyAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
+    pk_url_kwarg = 'doc_pk'
 
     def get_queryset(self):
         return Document.objects.filter(case__lawyer=self.request.user)
