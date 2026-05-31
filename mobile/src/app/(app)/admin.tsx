@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -139,7 +140,7 @@ export default function AdminScreen() {
         prev.map((u) => (u.id === id ? { ...u, is_active: !u.is_active } : u)),
       );
     } catch {
-      // silently fail
+      Alert.alert('Error', 'Failed to update user status. Please try again.');
     }
   };
 
