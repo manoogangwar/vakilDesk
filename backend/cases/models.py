@@ -55,3 +55,20 @@ class Case(models.Model):
 
     def __str__(self):
         return f"{self.case_name} ({self.lawyer.username})"
+
+
+class CaseClient(models.Model):
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='case_clients')
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='case_memberships',
+        limit_choices_to={'role': 'client'},
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('case', 'client')]
+
+    def __str__(self):
+        return f"{self.client} on {self.case}"
