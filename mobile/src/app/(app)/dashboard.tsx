@@ -41,6 +41,7 @@ type Profile = {
 type Case = {
   id: number;
   case_name: string;
+  case_number: string;
   next_date: string | null;
   payment_status: string;
 };
@@ -182,13 +183,23 @@ export default function DashboardScreen() {
   };
 
   const filteredCases = cases.filter(c =>
-    c.case_name.toLowerCase().includes(search.toLowerCase())
+    c.case_name.toLowerCase().includes(search.toLowerCase()) ||
+    c.case_number.toLowerCase().includes(search.toLowerCase())
   );
 
   const isAdmin = profile?.role === 'admin' || profile?.is_staff;
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
+
+  // Build today's date string in YYYY-MM-DD using local time (not UTC) to match backend date fields
+  const todayISO = (() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  })();
 
   return (
     <SafeAreaView style={styles.flex}>
@@ -249,10 +260,10 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Overview</Text>
         <View style={styles.statsGrid}>
           <StatCard icon="⚖️" value={cases.length} label="Active Cases" variant="navy" />
-          <StatCard icon="👥" value={0} label="Clients" variant="gold" />
+          <StatCard icon="⏳" value={cases.filter(c => c.payment_status === 'pending').length} label="Fee Pending" variant="gold" />
           <StatCard
             icon="📅"
-            value={cases.filter(c => c.next_date === new Date().toISOString().split('T')[0]).length}
+            value={cases.filter(c => c.next_date === todayISO).length}
             label="Hearing Today"
             variant="green"
           />
@@ -269,11 +280,11 @@ export default function DashboardScreen() {
             <Text style={styles.actionIcon}>⚖️</Text>
             <Text style={styles.actionLabel}>All Cases</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => Alert.alert('Coming Soon', 'Client management is coming in the next update.')}>
             <Text style={styles.actionIcon}>👤</Text>
             <Text style={styles.actionLabel}>Add Client</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => Alert.alert('Coming Soon', 'Calendar & scheduling is coming in the next update.')}>
             <Text style={styles.actionIcon}>📅</Text>
             <Text style={styles.actionLabel}>Schedule</Text>
           </TouchableOpacity>
@@ -378,9 +389,9 @@ export default function DashboardScreen() {
                 <DrawerItem icon="🛡" label="Admin Panel"
                   onPress={() => closeDrawer(() => router.push('/(app)/admin' as never))} />
               )}
-              <DrawerItem icon="🔔" label="Notifications" onPress={() => closeDrawer()} />
-              <DrawerItem icon="⚙️" label="Settings" onPress={() => closeDrawer()} />
-              <DrawerItem icon="❓" label="Help & Support" onPress={() => closeDrawer()} />
+              <DrawerItem icon="🔔" label="Notifications" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Notifications are coming in the next update.'))} />
+              <DrawerItem icon="⚙️" label="Settings" onPress={() => closeDrawer(() => Alert.alert('Coming Soon', 'Settings are coming in the next update.'))} />
+              <DrawerItem icon="❓" label="Help & Support" onPress={() => closeDrawer(() => Alert.alert('Help & Support', 'For assistance, contact support@vakildesk.in'))} />
             </ScrollView>
 
             {/* Logout at the very bottom */}
