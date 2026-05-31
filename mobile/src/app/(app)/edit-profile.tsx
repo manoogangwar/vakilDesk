@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Image,
@@ -47,7 +47,7 @@ export default function EditProfileScreen() {
   const [success, setSuccess] = useState('');
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     api.get<Profile>('/profile/').then(({ data }) => {
       setProfile(data);
       setForm({ first_name: data.first_name, last_name: data.last_name, phone: data.phone });
@@ -55,7 +55,7 @@ export default function EditProfileScreen() {
     AsyncStorage.getItem('profile_picture').then(uri => {
       if (uri) setProfilePic(uri);
     });
-  }, []);
+  }, []));
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
