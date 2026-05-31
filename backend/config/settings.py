@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'users',
     'cases',
     'clients',
+    'billing',
 ]
 
 AUTH_USER_MODEL = 'users.User'
