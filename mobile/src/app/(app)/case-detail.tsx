@@ -1,4 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,17 +17,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AlertBox } from '@/components/ui/AlertBox';
+import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { FormInput } from '@/components/ui/FormInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { C } from '@/constants/colors';
 import api from '@/utils/api';
-import { useFocusEffect } from 'expo-router';
 
 type CaseDetail = {
   id: number;
   case_name: string;
   case_number: string;
+  status: string;
+  court_name: string;
+  court_type: string;
+  judge_name: string;
   under_section: string;
   police_station: string;
   next_date: string | null;
@@ -36,6 +41,15 @@ type CaseDetail = {
   paid_amount: string;
   notes: string;
   lawyer_name: string;
+};
+
+type ClientItem = {
+  id: number;
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
 };
 
 type PayStatus = 'pending' | 'partial' | 'paid';
@@ -80,10 +94,20 @@ const infoStyles = StyleSheet.create({
   value: { flex: 1, fontSize: 13.5, color: C.text, fontWeight: '500' },
 });
 
+function getInitials(c: ClientItem) {
+  return ((c.first_name?.[0] ?? '') + (c.last_name?.[0] ?? '')).toUpperCase() ||
+    (c.email?.[0] ?? '?').toUpperCase();
+}
+
+function getClientName(c: ClientItem) {
+  return c.first_name ? `${c.first_name} ${c.last_name}`.trim() : c.email;
+}
+
 export default function CaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
+  const [clients, setClients] = useState<ClientItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [payForm, setPayForm] = useState({ fee_amount: '', paid_amount: '', payment_status: 'pending' as PayStatus });
@@ -95,12 +119,16 @@ export default function CaseDetailScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const { data } = await api.get<CaseDetail>(`/cases/${id}/`);
-      setCaseData(data);
+      const [caseRes, clientsRes] = await Promise.all([
+        api.get<CaseDetail>(`/cases/${id}/`),
+        api.get<ClientItem[]>(`/cases/${id}/clients/`),
+      ]);
+      setCaseData(caseRes.data);
+      setClients(clientsRes.data);
       setPayForm({
-        fee_amount: data.fee_amount,
-        paid_amount: data.paid_amount,
-        payment_status: data.payment_status as PayStatus,
+        fee_amount: caseRes.data.fee_amount,
+        paid_amount: caseRes.data.paid_amount,
+        payment_status: caseRes.data.payment_status as PayStatus,
       });
     } catch {
       router.back();
@@ -164,13 +192,18 @@ export default function CaseDetailScreen() {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>Case Detail</Text>
-        <View style={{ width: 50 }} />
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(app)/edit-case', params: { id } } as Href)}>
+          <Text style={styles.editBtn}>Edit</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
         {/* Case title card */}
         <View style={styles.titleCard}>
-          <Text style={styles.caseName}>{caseData.case_name}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.caseName} numberOfLines={2}>{caseData.case_name}</Text>
+            <Badge value={caseData.status} />
+          </View>
           {caseData.case_number ? (
             <Text style={styles.caseNumber}>Case No: #{caseData.case_number}</Text>
           ) : null}
@@ -191,6 +224,16 @@ export default function CaseDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        {/* Court information */}
+        {(caseData.court_name || caseData.judge_name) ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Court Information</Text>
+            {caseData.court_name ? <InfoRow label="Court" value={caseData.court_name} /> : null}
+            {caseData.court_type ? <InfoRow label="Court Type" value={caseData.court_type.replace('_', ' ')} /> : null}
+            {caseData.judge_name ? <InfoRow label="Judge" value={caseData.judge_name} /> : null}
+          </View>
+        ) : null}
 
         {/* Payment status — tappable */}
         <TouchableOpacity
@@ -228,6 +271,29 @@ export default function CaseDetailScreen() {
             Tap to update payment →
           </Text>
         </TouchableOpacity>
+
+        {/* Linked Clients */}
+        <View style={styles.card}>
+          <View style={styles.clientsHeader}>
+            <Text style={styles.cardTitle}>Clients ({clients.length})</Text>
+            <TouchableOpacity onPress={() => router.push('/(app)/clients' as Href)}>
+              <Text style={styles.manageLink}>Manage →</Text>
+            </TouchableOpacity>
+          </View>
+          {clients.length === 0 ? (
+            <Text style={styles.noClients}>No clients linked to this case.</Text>
+          ) : (
+            clients.map(c => (
+              <View key={c.id} style={styles.clientRow}>
+                <Avatar initials={getInitials(c)} size={36} />
+                <View style={styles.clientInfo}>
+                  <Text style={styles.clientName}>{getClientName(c)}</Text>
+                  {c.phone ? <Text style={styles.clientSub}>{c.phone}</Text> : <Text style={styles.clientSub}>{c.email}</Text>}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
 
       {/* ── Payment Status Modal ── */}
@@ -237,19 +303,16 @@ export default function CaseDetailScreen() {
         transparent
         onRequestClose={() => { Keyboard.dismiss(); setPayModalVisible(false); }}
       >
-        {/* KeyboardAvoidingView shifts the sheet up when keyboard appears */}
         <KeyboardAvoidingView
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* Tap the dark backdrop to dismiss keyboard / close */}
           <TouchableWithoutFeedback
             onPress={() => { Keyboard.dismiss(); setPayModalVisible(false); }}
           >
             <View style={styles.modalBackdrop} />
           </TouchableWithoutFeedback>
 
-          {/* Scrollable sheet — buttons stay reachable above the keyboard */}
           <ScrollView
             style={styles.modalSheet}
             contentContainerStyle={styles.modalContent}
@@ -263,7 +326,6 @@ export default function CaseDetailScreen() {
             {payError ? <AlertBox type="error" message={payError} /> : null}
             {paySuccess ? <AlertBox type="success" message={paySuccess} /> : null}
 
-            {/* Payment status picker */}
             <Text style={styles.pickerLabel}>Payment Status</Text>
             <View style={styles.statusRow}>
               {(['pending', 'partial', 'paid'] as PayStatus[]).map(s => (
@@ -335,19 +397,15 @@ const styles = StyleSheet.create({
   },
   backText: { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
   headerTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: C.white, textAlign: 'center' },
+  editBtn: { color: C.accent, fontSize: 14, fontWeight: '700' },
   body: { padding: 16, paddingBottom: 40, gap: 14 },
 
-  // Title card
-  titleCard: {
-    backgroundColor: C.primary,
-    borderRadius: 14,
-    padding: 18,
-  },
-  caseName: { fontSize: 20, fontWeight: '700', color: C.white, marginBottom: 4 },
+  titleCard: { backgroundColor: C.primary, borderRadius: 14, padding: 18 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6, gap: 10 },
+  caseName: { flex: 1, fontSize: 20, fontWeight: '700', color: C.white },
   caseNumber: { fontSize: 13, color: C.accent, marginBottom: 4 },
   lawyerName: { fontSize: 12.5, color: 'rgba(255,255,255,0.6)' },
 
-  // Info card
   card: {
     backgroundColor: C.white,
     borderRadius: 14,
@@ -364,80 +422,35 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Payment card
-  payCard: {
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1.5,
-  },
-  payCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
+  payCard: { borderRadius: 14, padding: 16, borderWidth: 1.5 },
+  payCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   payCardTitle: { fontSize: 14, fontWeight: '700', color: C.text },
-  payAmounts: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+  payAmounts: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   payAmountItem: { flex: 1, alignItems: 'center' },
   payAmountLabel: { fontSize: 11, color: C.textMuted, marginBottom: 4 },
   payAmountValue: { fontSize: 16, fontWeight: '700', color: C.text },
   payAmountDivider: { width: 1, height: 36, backgroundColor: C.border },
   payTapHint: { fontSize: 12, textAlign: 'right', fontWeight: '500' },
 
+  // Clients section
+  clientsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  manageLink: { fontSize: 12.5, color: C.primary, fontWeight: '600' },
+  noClients: { fontSize: 13, color: C.textMuted, textAlign: 'center', paddingVertical: 8 },
+  clientRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
+  clientInfo: { flex: 1 },
+  clientName: { fontSize: 13.5, fontWeight: '600', color: C.text },
+  clientSub: { fontSize: 12, color: C.textMuted, marginTop: 1 },
+
   // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  // Transparent flex-fill so tapping above the sheet closes it
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalBackdrop: { flex: 1 },
-  // The white scrollable sheet
-  modalSheet: {
-    backgroundColor: C.white,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    maxHeight: '85%',   // never taller than 85 % of the screen
-  },
-  // Padding lives here so ScrollView can scroll the full inner content
-  modalContent: {
-    padding: 24,
-    paddingBottom: 36,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: C.border,
-    alignSelf: 'center',
-    marginBottom: 18,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: C.text,
-    marginBottom: 18,
-    textAlign: 'center',
-  },
-  pickerLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: C.text,
-    marginBottom: 8,
-  },
+  modalSheet: { backgroundColor: C.white, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '85%' },
+  modalContent: { padding: 24, paddingBottom: 36 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: 'center', marginBottom: 18 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 18, textAlign: 'center' },
+  pickerLabel: { fontSize: 12, fontWeight: '600', color: C.text, marginBottom: 8 },
   statusRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  statusPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    alignItems: 'center',
-  },
+  statusPill: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: C.border, alignItems: 'center' },
   statusPillText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
   cancelBtn: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
   cancelText: { fontSize: 14, color: C.textMuted },
