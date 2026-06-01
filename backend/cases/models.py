@@ -70,7 +70,24 @@ class Document(models.Model):
         ('other', 'Other'),
     ]
 
-    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='documents')
+    SOURCE_CHOICES = [
+        ('uploaded', 'Uploaded'),
+        ('generated', 'Generated'),
+    ]
+
+    # A document belongs to a case (uploaded case file) and/or a client
+    # (a generated document such as an Income Certificate saved to a client).
+    case = models.ForeignKey(
+        Case, on_delete=models.CASCADE, related_name='documents',
+        null=True, blank=True,
+    )
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='client_documents',
+        null=True, blank=True,
+        limit_choices_to={'role': 'client'},
+    )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -78,6 +95,9 @@ class Document(models.Model):
     )
     title = models.CharField(max_length=255)
     doc_type = models.CharField(max_length=20, choices=DOC_TYPE_CHOICES, default='other')
+    # For generated documents: the standard form key, e.g. 'income_certificate'.
+    doc_category = models.CharField(max_length=40, blank=True)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='uploaded')
     file = models.FileField(upload_to='case_documents/%Y/%m/')
     file_name = models.CharField(max_length=255, blank=True)
     file_size = models.PositiveIntegerField(default=0)
@@ -87,7 +107,8 @@ class Document(models.Model):
         ordering = ['-uploaded_at']
 
     def __str__(self):
-        return f"{self.title} ({self.case.case_name})"
+        owner = self.case.case_name if self.case else (self.client and self.client.username) or '—'
+        return f"{self.title} ({owner})"
 
 
 class HearingRecord(models.Model):

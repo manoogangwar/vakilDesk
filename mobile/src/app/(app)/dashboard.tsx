@@ -331,6 +331,10 @@ export default function DashboardScreen() {
             <Text style={styles.actionIcon}>📅</Text>
             <Text style={styles.actionLabel}>Calendar</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(app)/documents' as Href)}>
+            <Text style={styles.actionIcon}>📄</Text>
+            <Text style={styles.actionLabel}>Document</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Recent Cases */}
@@ -434,6 +438,8 @@ export default function DashboardScreen() {
                 onPress={() => closeDrawer(() => router.push('/(app)/calendar' as Href))} />
               <DrawerItem icon="🧾" label="Invoices"
                 onPress={() => closeDrawer(() => router.push('/(app)/invoices' as Href))} />
+              <DrawerItem icon="📄" label="Generate Document"
+                onPress={() => closeDrawer(() => router.push('/(app)/documents' as Href))} />
               <DrawerItem icon="📝" label="Document Templates"
                 onPress={() => closeDrawer(() => router.push('/(app)/templates' as Href))} />
               {isAdmin && (
@@ -516,9 +522,9 @@ const styles = StyleSheet.create({
 
   // Quick actions
   sectionTitle: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 10 },
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 22 },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 22 },
   actionCard: {
-    flex: 1, backgroundColor: C.white, borderRadius: 12, padding: 14,
+    width: '22.5%', backgroundColor: C.white, borderRadius: 12, padding: 14,
     alignItems: 'center', borderWidth: 1, borderColor: C.border,
   },
   actionIcon: { fontSize: 24, marginBottom: 6 },

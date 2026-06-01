@@ -9,11 +9,15 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = [
-            'id', 'title', 'doc_type', 'file', 'file_url',
+            'id', 'title', 'doc_type', 'doc_category', 'source', 'file', 'file_url',
             'file_name', 'file_size', 'uploaded_by_name', 'uploaded_at',
         ]
         read_only_fields = ['id', 'file_url', 'file_name', 'file_size', 'uploaded_by_name', 'uploaded_at']
-        extra_kwargs = {'file': {'write_only': True}}
+        extra_kwargs = {
+            'file': {'write_only': True},
+            'doc_category': {'required': False},
+            'source': {'required': False},
+        }
 
     def get_file_url(self, obj):
         request = self.context.get('request')
