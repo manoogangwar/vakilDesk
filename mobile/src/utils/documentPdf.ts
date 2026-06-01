@@ -67,27 +67,46 @@ function bodyToHtml(content: string): string {
   return html;
 }
 
-export type DocumentHtmlOptions = {
+export type DocSection = {
   title: string;
-  category: string;
   body: string;
-  signatureDataUri?: string | null;
-  stampDataUri?: string | null;
-  signerLabel?: string;   // caption under the signature, e.g. lawyer/deponent name
+  lang?: 'en' | 'hi';
 };
 
-// Build an A4-formatted HTML document for expo-print. Signature and stamp
-// images (if provided) are placed in a signing block at the foot of the text.
+export type DocumentHtmlOptions = {
+  sections: DocSection[];          // one entry per language (1 or 2)
+  signatureDataUri?: string | null;
+  stampDataUri?: string | null;
+  signerLabel?: string;            // caption under the signature
+};
+
+// Build an A4-formatted HTML document for expo-print. Each section becomes its
+// own page (so English / Hindi versions print as separate, self-contained
+// pages). Signature and stamp images, if provided, are placed in a signing
+// block at the foot of every section.
 export function buildDocumentHTML(opts: DocumentHtmlOptions): string {
-  const { title, category, body, signatureDataUri, stampDataUri, signerLabel } = opts;
+  const { sections, signatureDataUri, stampDataUri, signerLabel } = opts;
 
   const hasSign = !!signatureDataUri || !!stampDataUri;
-  const signBlock = hasSign
+  const signCaption = signerLabel ?? 'Signature';
+  const signBlock = (lang: 'en' | 'hi') => hasSign
     ? `<div class="sign-block">
-        ${stampDataUri ? `<div class="sign-cell"><img class="stamp" src="${stampDataUri}" /><div class="sign-caption">Seal / Stamp</div></div>` : ''}
-        ${signatureDataUri ? `<div class="sign-cell"><img class="sign" src="${signatureDataUri}" /><div class="sign-caption">${escapeHtml(signerLabel ?? 'Signature')}</div></div>` : ''}
+        ${stampDataUri ? `<div class="sign-cell"><img class="stamp" src="${stampDataUri}" /><div class="sign-caption">${lang === 'hi' ? 'मुहर / सील' : 'Seal / Stamp'}</div></div>` : ''}
+        ${signatureDataUri ? `<div class="sign-cell"><img class="sign" src="${signatureDataUri}" /><div class="sign-caption">${escapeHtml(lang === 'hi' ? 'हस्ताक्षर' : signCaption)}</div></div>` : ''}
       </div>`
     : '';
+
+  const pages = sections.map((s, i) => {
+    const lang = s.lang ?? 'en';
+    const last = i === sections.length - 1;
+    return `<div class="page ${lang === 'hi' ? 'hi' : ''}" ${last ? '' : 'style="page-break-after: always;"'}>
+      <div class="doc-head">
+        <div class="doc-title">${escapeHtml(s.title)}</div>
+      </div>
+      <div class="content">${bodyToHtml(s.body)}</div>
+      ${signBlock(lang)}
+    </div>`;
+  }).join('\n');
 
   return `<!DOCTYPE html>
 <html>
@@ -104,6 +123,11 @@ export function buildDocumentHTML(opts: DocumentHtmlOptions): string {
       color: #000;
       margin: 0;
     }
+    /* Devanagari-capable fonts for Hindi pages (covers Android, iOS, Windows). */
+    .hi {
+      font-family: 'Noto Serif Devanagari', 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Devanagari Sangam MN', serif;
+      line-height: 2;
+    }
     .doc-head {
       border-bottom: 2px solid #000;
       padding-bottom: 10px;
@@ -115,12 +139,6 @@ export function buildDocumentHTML(opts: DocumentHtmlOptions): string {
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 2px;
-    }
-    .doc-category {
-      text-align: center;
-      font-size: 10.5pt;
-      color: #444;
-      margin-top: 4px;
     }
     .content p { margin: 0 0 12px 0; text-align: justify; }
     .sign-block {
@@ -142,12 +160,7 @@ export function buildDocumentHTML(opts: DocumentHtmlOptions): string {
   </style>
 </head>
 <body>
-  <div class="doc-head">
-    <div class="doc-title">${escapeHtml(title)}</div>
-    ${category ? `<div class="doc-category">${escapeHtml(category)}</div>` : ''}
-  </div>
-  <div class="content">${bodyToHtml(body)}</div>
-  ${signBlock}
+  ${pages}
 </body>
 </html>`;
 }

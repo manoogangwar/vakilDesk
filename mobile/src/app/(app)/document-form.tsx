@@ -56,6 +56,7 @@ export default function DocumentFormScreen() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [lang, setLang] = useState<'en' | 'hi' | 'both'>('en');
   const [signatureUri, setSignatureUri] = useState<string | null>(null);
   const [stampUri, setStampUri] = useState<string | null>(null);
   const [includeSignature, setIncludeSignature] = useState(false);
@@ -116,13 +117,17 @@ export default function DocumentFormScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient, profile]);
 
-  // ── Rendered document body (live) ──
-  const renderedBody = useMemo(() => {
-    if (!def) return '';
+  // ── Rendered document sections (live) — one per selected language ──
+  const sections = useMemo(() => {
+    if (!def) return [] as { title: string; body: string; lang: 'en' | 'hi' }[];
     const injected = buildAutoFillValues(profile, null, null); // dates + lawyer details
     const merged = { ...injected, ...fieldValues };
-    return renderDocument(def.content, merged);
-  }, [def, profile, fieldValues]);
+    const en = { title: def.title, body: renderDocument(def.content, merged), lang: 'en' as const };
+    const hi = { title: def.title_hi, body: renderDocument(def.content_hi, merged), lang: 'hi' as const };
+    if (lang === 'en') return [en];
+    if (lang === 'hi') return [hi];
+    return [en, hi];
+  }, [def, profile, fieldValues, lang]);
 
   const clientName = selectedClient
     ? (`${selectedClient.first_name} ${selectedClient.last_name}`.trim() || selectedClient.email)
@@ -156,9 +161,7 @@ export default function DocumentFormScreen() {
     const sig = includeSignature && signatureUri ? await imageToDataUri(signatureUri) : null;
     const stamp = includeStamp && stampUri ? await imageToDataUri(stampUri) : null;
     return buildDocumentHTML({
-      title: def!.title,
-      category: '',
-      body: renderedBody,
+      sections,
       signatureDataUri: sig,
       stampDataUri: stamp,
     });
@@ -223,8 +226,9 @@ export default function DocumentFormScreen() {
       setError(''); setBusy('save');
       try {
         const uri = await makePdfFile();
+        const langSuffix = lang === 'hi' ? ' (Hindi)' : lang === 'both' ? ' (EN+HI)' : '';
         const form = new FormData();
-        form.append('title', `${def!.label} — ${clientName}`);
+        form.append('title', `${def!.label}${langSuffix} — ${clientName}`);
         form.append('doc_type', 'other');
         form.append('doc_category', def!.key);
         form.append('source', 'generated');
@@ -281,6 +285,26 @@ export default function DocumentFormScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.badgeName}>{def.title}</Text>
               <Text style={styles.badgeDesc}>{def.description}</Text>
+            </View>
+          </View>
+
+          {/* Language selector */}
+          <View style={styles.selectorGroup}>
+            <Text style={styles.selectorLabel}>Language</Text>
+            <View style={styles.langRow}>
+              {([
+                { value: 'en', label: 'English' },
+                { value: 'hi', label: 'हिंदी' },
+                { value: 'both', label: 'Both' },
+              ] as const).map(o => (
+                <TouchableOpacity
+                  key={o.value}
+                  style={[styles.langBtn, lang === o.value && styles.langBtnActive]}
+                  onPress={() => setLang(o.value)}
+                >
+                  <Text style={[styles.langBtnText, lang === o.value && styles.langBtnTextActive]}>{o.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
@@ -351,29 +375,37 @@ export default function DocumentFormScreen() {
 
           {/* A4 Preview */}
           <Text style={styles.sectionTitle}>Preview</Text>
-          <View style={styles.pageWrap}>
-            <View style={styles.page}>
-              <Text style={styles.pageTitle}>{def.title.toUpperCase()}</Text>
-              <View style={styles.pageDivider} />
-              <Text style={styles.pageBody}>{renderedBody}</Text>
-              {(includeSignature && signatureUri) || (includeStamp && stampUri) ? (
-                <View style={styles.pageSignRow}>
-                  {includeStamp && stampUri ? (
-                    <View style={styles.pageSignCell}>
-                      <Image source={{ uri: stampUri }} style={styles.pageStampImg} resizeMode="contain" />
-                      <Text style={styles.pageSignCaption}>Seal / Stamp</Text>
-                    </View>
-                  ) : null}
-                  {includeSignature && signatureUri ? (
-                    <View style={styles.pageSignCell}>
-                      <Image source={{ uri: signatureUri }} style={styles.pageSignImg} resizeMode="contain" />
-                      <Text style={styles.pageSignCaption}>Signature</Text>
+          {sections.map(s => {
+            const hi = s.lang === 'hi';
+            return (
+              <View key={s.lang} style={styles.pageWrap}>
+                {sections.length > 1 ? (
+                  <Text style={styles.pageLangTag}>{hi ? 'हिंदी' : 'English'}</Text>
+                ) : null}
+                <View style={styles.page}>
+                  <Text style={hi ? styles.pageTitleHi : styles.pageTitle}>{hi ? s.title : s.title.toUpperCase()}</Text>
+                  <View style={styles.pageDivider} />
+                  <Text style={hi ? styles.pageBodyHi : styles.pageBody}>{s.body}</Text>
+                  {(includeSignature && signatureUri) || (includeStamp && stampUri) ? (
+                    <View style={styles.pageSignRow}>
+                      {includeStamp && stampUri ? (
+                        <View style={styles.pageSignCell}>
+                          <Image source={{ uri: stampUri }} style={styles.pageStampImg} resizeMode="contain" />
+                          <Text style={hi ? styles.pageSignCaptionHi : styles.pageSignCaption}>{hi ? 'मुहर / सील' : 'Seal / Stamp'}</Text>
+                        </View>
+                      ) : null}
+                      {includeSignature && signatureUri ? (
+                        <View style={styles.pageSignCell}>
+                          <Image source={{ uri: signatureUri }} style={styles.pageSignImg} resizeMode="contain" />
+                          <Text style={hi ? styles.pageSignCaptionHi : styles.pageSignCaption}>{hi ? 'हस्ताक्षर' : 'Signature'}</Text>
+                        </View>
+                      ) : null}
                     </View>
                   ) : null}
                 </View>
-              ) : null}
-            </View>
-          </View>
+              </View>
+            );
+          })}
 
           {/* Actions */}
           <View style={styles.actions}>
@@ -469,6 +501,11 @@ const styles = StyleSheet.create({
   selectorText: { flex: 1, fontSize: 14, color: C.text },
   selectorPlaceholder: { flex: 1, fontSize: 14, color: '#c0c7d3' },
   selectorChevron: { fontSize: 11, color: C.textMuted },
+  langRow: { flexDirection: 'row', gap: 8 },
+  langBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.inputBg, alignItems: 'center' },
+  langBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+  langBtnText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
+  langBtnTextActive: { color: C.white },
   dropDown: { backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border, borderRadius: 8, maxHeight: 200, overflow: 'hidden' },
   dropDownOption: { paddingHorizontal: 13, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: C.border },
   dropDownOptionActive: { backgroundColor: `${C.primary}12` },
@@ -505,16 +542,20 @@ const styles = StyleSheet.create({
   tileRemove: { fontSize: 12, color: C.error, fontWeight: '600' },
 
   // A4 preview
-  pageWrap: { backgroundColor: '#dcdcdc', borderRadius: 8, padding: 12, alignItems: 'center' },
+  pageWrap: { backgroundColor: '#dcdcdc', borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 12 },
+  pageLangTag: { alignSelf: 'flex-start', fontSize: 11, fontWeight: '700', color: C.primary, marginBottom: 8, backgroundColor: C.white, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' },
   page: { width: '100%', backgroundColor: C.white, paddingHorizontal: 22, paddingVertical: 26, borderRadius: 2, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   pageTitle: { fontFamily: SERIF, fontSize: 15, fontWeight: '700', textAlign: 'center', letterSpacing: 1.5, color: '#000' },
+  pageTitleHi: { fontSize: 15, fontWeight: '700', textAlign: 'center', color: '#000' },
   pageDivider: { borderBottomWidth: 1.5, borderBottomColor: '#000', marginTop: 8, marginBottom: 14 },
   pageBody: { fontFamily: SERIF, fontSize: 12, lineHeight: 20, color: '#000', textAlign: 'justify' },
+  pageBodyHi: { fontSize: 12.5, lineHeight: 23, color: '#000', textAlign: 'justify' },
   pageSignRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 28, marginTop: 28, alignItems: 'flex-end' },
   pageSignCell: { alignItems: 'center' },
   pageSignImg: { width: 110, height: 50 },
   pageStampImg: { width: 80, height: 64 },
   pageSignCaption: { fontFamily: SERIF, fontSize: 10, color: '#000', borderTopWidth: 1, borderTopColor: '#000', paddingTop: 3, marginTop: 3, minWidth: 90, textAlign: 'center' },
+  pageSignCaptionHi: { fontSize: 10, color: '#000', borderTopWidth: 1, borderTopColor: '#000', paddingTop: 3, marginTop: 3, minWidth: 90, textAlign: 'center' },
 
   // Actions
   actions: { gap: 10, marginTop: 4 },

@@ -29,14 +29,18 @@ export type DocField = {
   default?: string;       // pre-filled value when nothing auto-fills it
 };
 
+export type DocLang = 'en' | 'hi';
+
 export type DocFormDef = {
   key: string;            // matches DocumentTemplate.category
   label: string;          // short menu label
-  title: string;          // formal heading printed on the document
+  title: string;          // formal heading printed on the document (English)
+  title_hi: string;       // formal heading (Hindi)
   icon: string;
   description: string;
   fields: DocField[];
-  content: string;
+  content: string;        // document body template (English)
+  content_hi: string;     // document body template (Hindi)
 };
 
 // ── Standard documents ────────────────────────────────────────────────────
@@ -46,6 +50,7 @@ export const DOC_FORMS: DocFormDef[] = [
     key: 'income_certificate',
     label: 'Income Certificate',
     title: 'Income Certificate Application',
+    title_hi: 'आय प्रमाण पत्र आवेदन',
     icon: '💰',
     description: 'Application to the Tehsildar / BDO for an income certificate.',
     fields: [
@@ -86,12 +91,41 @@ Yours faithfully,
 Contact: {{phone}}
 Date: {{date_today}}
 Place: {{place}}`,
+    content_hi: `सेवा में,
+{{authority}},
+{{place}}
+
+विषय: आय प्रमाण पत्र हेतु आवेदन
+
+महोदय/महोदया,
+
+मैं, {{applicant_name}}, पुत्र/पुत्री श्री {{father_name}}, निवासी {{address}}, आय प्रमाण पत्र जारी किए जाने हेतु यह आवेदन सादर प्रस्तुत करता/करती हूँ।
+
+विवरण निम्नानुसार है:
+
+1. आवेदक का नाम: {{applicant_name}}
+2. पिता/पति का नाम: {{father_name}}
+3. स्थायी पता: {{address}}
+4. वार्षिक पारिवारिक आय (समस्त स्रोतों से): रु. {{annual_income}}/-
+5. प्रमाण पत्र का प्रयोजन: {{purpose}}
+
+मैं घोषणा करता/करती हूँ कि उपर्युक्त दी गई जानकारी मेरी जानकारी एवं विश्वास के अनुसार सत्य एवं सही है, तथा आवश्यकता पड़ने पर मैं संबंधित दस्तावेज़ प्रस्तुत करने का वचन देता/देती हूँ।
+
+अतः आपसे निवेदन है कि शीघ्र-अतिशीघ्र मेरे पक्ष में आय प्रमाण पत्र जारी करने की कृपा करें।
+
+भवदीय,
+
+{{applicant_name}}
+संपर्क: {{phone}}
+दिनांक: {{date_today}}
+स्थान: {{place}}`,
   },
 
   {
     key: 'domicile_certificate',
     label: 'Domicile Certificate',
     title: 'Domicile Certificate Application',
+    title_hi: 'मूल निवास प्रमाण पत्र आवेदन',
     icon: '🏠',
     description: 'Application for a domicile / residence certificate.',
     fields: [
@@ -127,12 +161,37 @@ Yours faithfully,
 {{applicant_name}}
 Date: {{date_today}}
 Place: {{place}}`,
+    content_hi: `सेवा में,
+{{authority}},
+{{place}}
+
+विषय: मूल निवास (अधिवास) प्रमाण पत्र हेतु आवेदन
+
+महोदय/महोदया,
+
+मैं, {{applicant_name}}, पुत्र/पुत्री श्री {{father_name}}, सादर निवेदन करता/करती हूँ कि मैं {{residing_since}} से {{address}} का स्थायी एवं वास्तविक निवासी हूँ।
+
+निवास प्रमाण हेतु निम्नलिखित दस्तावेज़ संलग्न हैं:
+1. आधार कार्ड / मतदाता पहचान पत्र की प्रति
+2. निवास प्रमाण (बिजली/पानी बिल अथवा राशन कार्ड)
+3. नवीनतम पासपोर्ट आकार के फोटोग्राफ
+
+मैं घोषणा करता/करती हूँ कि उपर्युक्त जानकारी मेरी जानकारी एवं विश्वास के अनुसार सत्य एवं सही है।
+
+अतः {{purpose}} के प्रयोजन हेतु मेरे पक्ष में मूल निवास प्रमाण पत्र जारी करने की कृपा करें।
+
+भवदीय,
+
+{{applicant_name}}
+दिनांक: {{date_today}}
+स्थान: {{place}}`,
   },
 
   {
     key: 'caste_certificate',
     label: 'Caste Certificate',
     title: 'Caste Certificate Application',
+    title_hi: 'जाति प्रमाण पत्र आवेदन',
     icon: '📋',
     description: 'Application for an SC / ST / OBC caste certificate.',
     fields: [
@@ -172,12 +231,40 @@ Yours faithfully,
 {{applicant_name}}
 Date: {{date_today}}
 Place: {{place}}`,
+    content_hi: `सेवा में,
+{{authority}},
+{{place}}
+
+विषय: जाति प्रमाण पत्र हेतु आवेदन
+
+महोदय/महोदया,
+
+मैं, {{applicant_name}}, पुत्र/पुत्री श्री {{father_name}}, निवासी {{address}}, जाति प्रमाण पत्र जारी किए जाने हेतु आवेदन करता/करती हूँ।
+
+मैं {{caste_name}} जाति से संबंध रखता/रखती हूँ, जो प्रचलित सरकारी अधिसूचना के अनुसार {{category}} श्रेणी में अधिसूचित है।
+
+संलग्न दस्तावेज़:
+1. आधार कार्ड / मतदाता पहचान पत्र की प्रति
+2. पिता के जाति प्रमाण पत्र की प्रति (यदि उपलब्ध हो)
+3. जाति अंकित विद्यालय प्रमाण पत्र की प्रति
+4. नवीनतम पासपोर्ट आकार के फोटोग्राफ
+
+मैं घोषणा करता/करती हूँ कि उपर्युक्त जानकारी मेरी जानकारी के अनुसार सत्य है।
+
+प्रयोजन: {{purpose}}
+
+भवदीय,
+
+{{applicant_name}}
+दिनांक: {{date_today}}
+स्थान: {{place}}`,
   },
 
   {
     key: 'affidavit',
     label: 'Affidavit',
     title: 'Affidavit',
+    title_hi: 'शपथ पत्र',
     icon: '📜',
     description: 'General sworn affidavit with verification clause.',
     fields: [
@@ -205,12 +292,29 @@ DEPONENT
 
 Drafted by: {{lawyer_name}}, Advocate
 Bar Council No.: {{bar_number}}`,
+    content_hi: `मैं, {{deponent_name}}, पुत्र/पुत्री/पत्नी श्री {{father_name}}, आयु लगभग {{age}} वर्ष, निवासी {{address}}, सत्यनिष्ठा से शपथपूर्वक घोषणा करता/करती हूँ कि:
+
+{{statements}}
+
+मैं आगे यह कथन करता/करती हूँ कि इस शपथ पत्र की विषय-वस्तु मेरी जानकारी एवं विश्वास के अनुसार सत्य एवं सही है तथा इसमें कोई भी तथ्य छिपाया नहीं गया है।
+
+शपथकर्ता
+
+सत्यापन
+
+सत्यापित किया जाता है कि उपर्युक्त शपथ पत्र की विषय-वस्तु मेरी जानकारी एवं विश्वास के अनुसार सत्य एवं सही है तथा इसमें कुछ भी छिपाया नहीं गया है। यह दिनांक {{date_today}} को {{place}} पर सत्यापित किया गया।
+
+शपथकर्ता
+
+प्रारूपकर्ता: {{lawyer_name}}, अधिवक्ता
+बार काउंसिल क्रमांक: {{bar_number}}`,
   },
 
   {
     key: 'noc',
     label: 'NOC',
     title: 'No Objection Certificate',
+    title_hi: 'अनापत्ति प्रमाण पत्र',
     icon: '✅',
     description: 'No Objection Certificate issued in favour of a person.',
     fields: [
@@ -244,12 +348,33 @@ Date: {{date_today}}
 Place: {{place}}
 
 (Signature with Seal)`,
+    content_hi: `दिनांक: {{date_today}}
+स्थान: {{place}}
+
+जिससे भी संबंधित हो
+
+यह प्रमाणित किया जाता है कि हमें, {{issuer_name}} को, {{beneficiary_name}}, पुत्र/पुत्री श्री {{father_name}}, निवासी {{beneficiary_address}} के {{purpose}} के प्रयोजन हेतु कोई आपत्ति नहीं है।
+
+यह प्रमाण पत्र {{beneficiary_name}} के अनुरोध पर उपर्युक्त प्रयोजन हेतु जारी किया जा रहा है तथा जारी होने की तिथि से {{validity}} की अवधि तक वैध रहेगा।
+
+यह प्रमाण पत्र सद्भावपूर्वक एवं हमें उपलब्ध जानकारी के आधार पर जारी किया गया है। इस प्रमाण पत्र के किसी भी दुरुपयोग के लिए हम उत्तरदायी नहीं हैं।
+
+जारीकर्ता:
+
+नाम: {{issuer_name}}
+पद / हैसियत: {{issuer_designation}}
+पता: {{issuer_address}}
+दिनांक: {{date_today}}
+स्थान: {{place}}
+
+(हस्ताक्षर एवं मुहर सहित)`,
   },
 
   {
     key: 'rti',
     label: 'RTI Application',
     title: 'RTI Application',
+    title_hi: 'सूचना का अधिकार अधिनियम, 2005 के अंतर्गत आवेदन',
     icon: '🔍',
     description: 'Application for information under the RTI Act, 2005.',
     fields: [
@@ -289,12 +414,39 @@ Address: {{address}}
 Contact: {{phone}}
 Date: {{date_today}}
 Place: {{place}}`,
+    content_hi: `सेवा में,
+जन सूचना अधिकारी,
+{{public_authority}}
+{{authority_address}}
+
+विषय: सूचना का अधिकार अधिनियम, 2005 के अंतर्गत सूचना हेतु आवेदन
+
+महोदय/महोदया,
+
+मैं, {{applicant_name}}, पुत्र/पुत्री श्री {{father_name}}, निवासी {{address}}, सूचना का अधिकार अधिनियम, 2005 के अंतर्गत निम्नलिखित सूचना प्राप्त करना चाहता/चाहती हूँ:
+
+{{info_sought}}
+
+सूचना की अवधि / समयावधि: {{period}}
+
+मैं निर्धारित आवेदन शुल्क के रूप में रु. 10/- (दस रुपये मात्र) का भारतीय पोस्टल ऑर्डर / डिमांड ड्राफ्ट / न्यायालय शुल्क टिकट संलग्न कर रहा/रही हूँ।
+
+यदि वांछित सूचना आपके कार्यालय से संबंधित नहीं है, तो कृपया इस आवेदन को सूचना का अधिकार अधिनियम, 2005 की धारा 6(3) के अंतर्गत संबंधित जन सूचना अधिकारी को अंतरित करें तथा मुझे सूचित करें।
+
+भवदीय,
+
+{{applicant_name}}
+पता: {{address}}
+संपर्क: {{phone}}
+दिनांक: {{date_today}}
+स्थान: {{place}}`,
   },
 
   {
     key: 'rent_agreement',
     label: 'Rent Agreement',
     title: 'Rent / Leave & Licence Agreement',
+    title_hi: 'किराया / लीव एंड लाइसेंस अनुबंध',
     icon: '🔑',
     description: 'Leave & licence / rent agreement between landlord and tenant.',
     fields: [
@@ -351,12 +503,53 @@ _____________________                  _____________________
 WITNESSES:
 1. _____________________
 2. _____________________`,
+    content_hi: `यह अनुबंध {{place}} पर दिनांक {{date_today}} को निष्पादित किया गया।
+
+के बीच
+
+{{landlord_name}}, निवासी {{landlord_address}} (जिन्हें इसके पश्चात "मकान मालिक / अनुज्ञापक" कहा जाएगा), प्रथम पक्ष;
+
+तथा
+
+{{tenant_name}}, पुत्र/पुत्री श्री {{tenant_father_name}}, निवासी {{tenant_address}} (जिन्हें इसके पश्चात "किरायेदार / अनुज्ञप्तिधारी" कहा जाएगा), द्वितीय पक्ष।
+
+जबकि मकान मालिक {{property_address}} स्थित परिसर का पूर्ण स्वामी है;
+
+तथा जबकि किरायेदार उक्त परिसर को {{usage}} प्रयोजन हेतु किराये/लाइसेंस पर लेना चाहता है;
+
+अब यह अनुबंध निम्नानुसार साक्ष्य देता है:
+
+1. अवधि: यह अनुबंध {{start_date}} से प्रारंभ होकर {{lease_duration}} की अवधि के लिए होगा।
+
+2. किराया / लाइसेंस शुल्क: किरायेदार प्रति माह रु. {{monthly_rent}}/- का मासिक किराया/लाइसेंस शुल्क अदा करेगा।
+
+3. प्रतिभूति राशि: किरायेदार ने रु. {{security_deposit}}/- की वापसी योग्य, ब्याजरहित प्रतिभूति राशि जमा की है।
+
+4. उपयोग: परिसर का उपयोग केवल {{usage}} प्रयोजन हेतु किया जाएगा।
+
+5. किरायेदार मकान मालिक की पूर्व लिखित सहमति के बिना उक्त परिसर को उपकिराये पर नहीं देगा, हस्तांतरित नहीं करेगा अथवा कब्ज़ा नहीं सौंपेगा।
+
+6. किरायेदार परिसर को अच्छी एवं उपयोग योग्य स्थिति में रखेगा तथा मकान मालिक की सहमति के बिना कोई संरचनात्मक परिवर्तन नहीं करेगा।
+
+7. कोई भी पक्ष दूसरे पक्ष को एक माह का पूर्व लिखित नोटिस देकर इस अनुबंध को समाप्त कर सकता है।
+
+इसके साक्ष्यस्वरूप, पक्षों ने ऊपर उल्लिखित दिन, माह एवं वर्ष को इस अनुबंध पर हस्ताक्षर किए हैं।
+
+मकान मालिक / अनुज्ञापक                किरायेदार / अनुज्ञप्तिधारी
+
+_____________________                  _____________________
+{{landlord_name}}                      {{tenant_name}}
+
+गवाह:
+1. _____________________
+2. _____________________`,
   },
 
   {
     key: 'legal_notice',
     label: 'Legal Notice',
     title: 'Legal Notice',
+    title_hi: 'कानूनी नोटिस',
     icon: '⚖️',
     description: 'Advocate legal notice to an opposite party.',
     fields: [
@@ -397,6 +590,34 @@ Yours truly,
 {{lawyer_name}}
 Advocate
 Phone: {{lawyer_phone}}`,
+    content_hi: `सेवा में,
+{{recipient_name}}
+{{recipient_address}}
+
+(रजिस्टर्ड डाक / स्पीड पोस्ट ए.डी. सहित प्रेषित)
+
+सूचित किया जाता है कि मैं, {{lawyer_name}}, अधिवक्ता, अपने मुवक्किल {{client_name}}, निवासी {{client_address}} (जिन्हें इसके पश्चात "मेरा मुवक्किल" कहा जाएगा) के विधिवत निर्देश एवं अधिकार पर आपको यह कानूनी नोटिस प्रेषित करता हूँ:
+
+1. कि मेरा मुवक्किल आपके यहाँ वर्णित कृत्यों एवं चूकों से व्यथित है तथा उसने मुझे यह नोटिस जारी करने का निर्देश दिया है।
+
+2. कि {{grievance}}।
+
+3. कि बार-बार अनुरोध एवं स्मरण कराने के बावजूद, आपने मेरे मुवक्किल की शिकायत का निवारण करने में विफलता एवं उपेक्षा की है, जो मेरे मुवक्किल के विधिक अधिकारों का स्पष्ट उल्लंघन है।
+
+4. कि आपके उपर्युक्त कृत्यों/चूकों के कारण मेरे मुवक्किल को हानि, क्षति एवं उत्पीड़न सहना पड़ा है।
+
+आपको एतद्द्वारा निर्देशित किया जाता है कि इस नोटिस की प्राप्ति से {{compliance_days}} दिनों के भीतर {{demand}}, अन्यथा मेरा मुवक्किल आपके विरुद्ध सक्षम न्यायालय में उपयुक्त विधिक कार्यवाही आरंभ करने हेतु बाध्य होगा, जिसका समस्त जोखिम, व्यय एवं परिणाम आपके होंगे।
+
+कृपया तदनुसार ध्यान दें।
+
+दिनांक: {{date_today}}
+स्थान: {{place}}
+
+भवदीय,
+
+{{lawyer_name}}
+अधिवक्ता
+दूरभाष: {{lawyer_phone}}`,
   },
 ];
 
