@@ -1,4 +1,5 @@
 from rest_framework import generics, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -56,3 +57,49 @@ class ClientCasesView(APIView):
         from cases.serializers import CaseSerializer
         cases = Case.objects.filter(lawyer=request.user, case_clients__client=profile.user)
         return Response(CaseSerializer(cases, many=True, context={'request': request}).data)
+
+
+class ClientDocumentListCreateView(generics.ListCreateAPIView):
+    """List a client's documents, or save a generated document to the client."""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_serializer_class(self):
+        from cases.serializers import DocumentSerializer
+        return DocumentSerializer
+
+    def get_queryset(self):
+        from cases.models import Document
+        profile = ClientProfile.objects.filter(
+            pk=self.kwargs['pk'], lawyer=self.request.user
+        ).first()
+        if not profile:
+            return Document.objects.none()
+        return Document.objects.filter(client=profile.user)
+
+    def perform_create(self, serializer):
+        profile = ClientProfile.objects.get(pk=self.kwargs['pk'], lawyer=self.request.user)
+        uploaded_file = self.request.FILES.get('file')
+        serializer.save(
+            client=profile.user,
+            uploaded_by=self.request.user,
+            file_name=uploaded_file.name if uploaded_file else '',
+            file_size=uploaded_file.size if uploaded_file else 0,
+        )
+
+
+class ClientDocumentDeleteView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    pk_url_kwarg = 'doc_pk'
+
+    def get_serializer_class(self):
+        from cases.serializers import DocumentSerializer
+        return DocumentSerializer
+
+    def get_queryset(self):
+        from cases.models import Document
+        # Only documents this lawyer saved, for clients they manage.
+        return Document.objects.filter(
+            uploaded_by=self.request.user,
+            client__client_profile__lawyer=self.request.user,
+        )

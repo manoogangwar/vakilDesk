@@ -1,5 +1,7 @@
+import { cacheDirectory, downloadAsync } from 'expo-file-system/legacy';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,6 +18,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { C } from '@/constants/colors';
 import api from '@/utils/api';
+import { getAccessToken } from '@/utils/auth';
+import { DOC_FORM_MAP } from '@/utils/documentForms';
 
 type Client = {
   id: number;
@@ -37,6 +41,16 @@ type LinkedCase = {
   status: string;
   next_date: string | null;
   payment_status: string;
+};
+
+type ClientDoc = {
+  id: number;
+  title: string;
+  doc_category: string;
+  source: string;
+  file_url: string | null;
+  file_name: string;
+  uploaded_at: string;
 };
 
 function getName(c: Client) {
@@ -73,24 +87,64 @@ export default function ClientDetailScreen() {
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
   const [cases, setCases] = useState<LinkedCase[]>([]);
+  const [docs, setDocs] = useState<ClientDoc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [clientRes, casesRes] = await Promise.all([
+      const [clientRes, casesRes, docsRes] = await Promise.all([
         api.get<Client>(`/clients/${id}/`),
         api.get<LinkedCase[]>(`/clients/${id}/cases/`),
+        api.get<ClientDoc[]>(`/clients/${id}/documents/`),
       ]);
       setClient(clientRes.data);
       setCases(casesRes.data);
+      setDocs(docsRes.data);
     } catch {
       router.back();
     } finally {
       setLoading(false);
     }
   }, [id, router]);
+
+  const handleOpenDoc = async (doc: ClientDoc) => {
+    if (!doc.file_url) { Alert.alert('Error', 'File not available.'); return; }
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) { Alert.alert('Not supported', 'File sharing is not available on this device.'); return; }
+    setDownloadingId(doc.id);
+    try {
+      const token = await getAccessToken();
+      const localUri = (cacheDirectory ?? '') + (doc.file_name || `doc_${doc.id}.pdf`);
+      const { uri } = await downloadAsync(doc.file_url, localUri, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: doc.title });
+    } catch {
+      Alert.alert('Error', 'Could not open the document.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDeleteDoc = (doc: ClientDoc) => {
+    Alert.alert('Delete Document', `Remove "${doc.title}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/clients/${id}/documents/${doc.id}/`);
+            setDocs(prev => prev.filter(d => d.id !== doc.id));
+          } catch {
+            Alert.alert('Error', 'Failed to delete the document.');
+          }
+        },
+      },
+    ]);
+  };
 
   useFocusEffect(useCallback(() => { void fetchData(); }, [fetchData]));
 
@@ -177,6 +231,42 @@ export default function ClientDetailScreen() {
             ))
           )}
         </View>
+
+        {/* Documents */}
+        <View style={styles.card}>
+          <View style={styles.docHeader}>
+            <Text style={styles.cardTitle}>Documents ({docs.length})</Text>
+            <TouchableOpacity
+              style={styles.generateBtn}
+              onPress={() => router.push('/(app)/documents' as Href)}
+            >
+              <Text style={styles.generateBtnText}>+ Generate</Text>
+            </TouchableOpacity>
+          </View>
+          {docs.length === 0 ? (
+            <Text style={styles.noCases}>No saved documents yet.</Text>
+          ) : (
+            docs.map(doc => (
+              <View key={doc.id} style={styles.docRow}>
+                <Text style={styles.docIcon}>{DOC_FORM_MAP[doc.doc_category]?.icon ?? '📄'}</Text>
+                <View style={styles.docInfo}>
+                  <Text style={styles.docTitle} numberOfLines={1}>{doc.title}</Text>
+                  <Text style={styles.docMeta}>
+                    {doc.source === 'generated' ? 'Generated' : 'Uploaded'} · {fmt(doc.uploaded_at)}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => handleOpenDoc(doc)} style={styles.docActionBtn} disabled={downloadingId === doc.id}>
+                  {downloadingId === doc.id
+                    ? <ActivityIndicator size="small" color={C.primary} />
+                    : <Text style={styles.docOpenText}>Open</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteDoc(doc)} style={styles.docActionBtn}>
+                  <Text style={styles.docDeleteText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,4 +294,16 @@ const styles = StyleSheet.create({
   caseName: { fontSize: 13.5, fontWeight: '600', color: C.text },
   caseSub: { fontSize: 12, color: C.textMuted, marginTop: 2 },
   caseBadges: { gap: 4, alignItems: 'flex-end' },
+
+  docHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  generateBtn: { backgroundColor: C.primary, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8 },
+  generateBtnText: { color: C.white, fontSize: 12, fontWeight: '700' },
+  docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border, gap: 10 },
+  docIcon: { fontSize: 20, width: 26, textAlign: 'center' },
+  docInfo: { flex: 1 },
+  docTitle: { fontSize: 13.5, fontWeight: '600', color: C.text },
+  docMeta: { fontSize: 11.5, color: C.textMuted, marginTop: 2 },
+  docActionBtn: { paddingHorizontal: 8, paddingVertical: 4 },
+  docOpenText: { fontSize: 12.5, color: C.primary, fontWeight: '600' },
+  docDeleteText: { fontSize: 13, color: C.error },
 });
