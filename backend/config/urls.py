@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/clients/', include('clients.urls')),
     path('api/invoices/', include('billing.urls')),
     path('api/messages/', include('messaging.urls')),
+    path('api/templates/', include('templates_app.urls')),
 ]
 
 if settings.DEBUG:

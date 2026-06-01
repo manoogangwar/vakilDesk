@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'clients',
     'billing',
     'messaging',
+    'templates_app',
 ]
 
 AUTH_USER_MODEL = 'users.User'
